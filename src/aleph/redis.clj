@@ -84,6 +84,7 @@
      (fn [_]
        (when-not (closed? ch)
          (restart nil))))
+    (on-closed ch #(close-connection redis-client))
     ch))
 
 (defn task-emitter-channel

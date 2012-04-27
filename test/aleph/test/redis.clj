@@ -26,6 +26,7 @@
 (deftest test-task-channels
   (let [c1 (redis-client config)
         c2 (redis-client config)
+        _ @(c1 [:del :q])
         emitter-channel (task-emitter-channel c1 :q)
         receiver-channel (task-receiver-channel c2 :q)
         task {:foo "bar"}]

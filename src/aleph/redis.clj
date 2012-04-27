@@ -81,7 +81,9 @@
      (fn [_]
        (apply receive-task redis-client queue-names))
      #(enqueue ch %)
-     (fn [_] (restart nil)))
+     (fn [_]
+       (when-not (closed? ch)
+         (restart nil))))
     ch))
 
 (defn task-emitter-channel

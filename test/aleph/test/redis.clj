@@ -13,10 +13,22 @@
     [aleph redis]
     [aleph.test utils]))
 
+(def config {:host "localhost"})
+
 (deftest ^:benchmark test-redis-roundtrip
-  (let [r (redis-client {:host "localhost"})]
+  (let [r (redis-client config)]
     (bench "simple roundtrip"
       @(r [:ping]))
     (bench "1e3 roundtrips"
       @(apply merge-results (repeatedly 1e3 #(r [:ping]))))
     (close-connection r)))
+
+(deftest test-task-channels
+  (let [c1 (redis-client config)
+        c2 (redis-client config)
+        emitter-channel (task-emitter-channel c1 :q)
+        receiver-channel (task-receiver-channel c2 :q)
+        task {:foo "bar"}]
+    (enqueue emitter-channel task)
+    (is (= {:queue "q" :task task}
+           @(read-channel receiver-channel)))))

@@ -55,7 +55,7 @@
 	     (run-pipeline result
 	       {:error-handler (fn [_] )}
 	       (fn [_] (reset! database (-> args first second)))))
-	   result))))) 
+	   result)))))
 
 (defn enqueue-task
   "Enqueues a task onto a Redis queue. 'task' must be a printable Clojure data structure."
@@ -71,6 +71,27 @@
   (run-pipeline
     (redis-client (concat ["brpop"] queue-names [0]))
     #(hash-map :queue (first %) :task (read-string (second %)))))
+
+(defn task-receiver-channel
+  "Returns a channel that will receive tasks on the specified queue(s)"
+  [redis-client & queue-names]
+  (let [ch (channel)]
+    (run-pipeline
+     nil
+     (fn [_]
+       (apply receive-task redis-client queue-names))
+     #(enqueue ch %)
+     (fn [_] (restart nil)))
+    ch))
+
+(defn task-emitter-channel
+  "Returns a channel. Every task enqueued in this channel will be
+   enqueued into the corresponding redis task queue. The tasks
+   enqueued must be printable Clojure data structures"
+  [redis-client queue-name]
+  (let [ch (channel)]
+    (receive-all ch (partial enqueue-task redis-client queue-name))
+    ch))
 
 (defn- filter-messages [ch]
   (->> ch
@@ -150,9 +171,3 @@
    to the PUNSUBSCRIBE command."
   [redis-stream & stream-patterns]
   (enqueue redis-stream (list* "punsubscribe" stream-patterns)))
-
-
-
-
-
-

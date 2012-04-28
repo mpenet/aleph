@@ -95,9 +95,7 @@
    enqueued into the corresponding redis task queue. The tasks
    enqueued must be printable Clojure data structures"
   [redis-client queue-name]
-  (let [ch (channel)]
-    (receive-all ch (partial enqueue-task redis-client queue-name))
-    ch))
+  (sink (partial enqueue-task redis-client queue-name)))
 
 (defn- filter-messages [ch]
   (->> ch

@@ -90,12 +90,10 @@
     (on-closed ch #(close-connection redis-client))
     ch))
 
-(defn task-emitter-channel
-  "Returns a channel. Every task enqueued in this channel will be
-   enqueued into the corresponding redis task queue. The tasks
-   enqueued must be printable Clojure data structures"
-  [redis-client queue-name]
-  (sink (partial enqueue-task redis-client queue-name)))
+(defn task-channel
+  [emitter-client receiver-client queue-name]
+  (splice (task-receiver-channel receiver-client queue-name)
+          (sink (partial enqueue-task emitter-client queue-name))))
 
 (defn- filter-messages [ch]
   (->> ch
